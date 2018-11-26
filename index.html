@@ -1,0 +1,85 @@
+<body>
+<script src="js/three.min.js"></script>
+<script src="js/dat.gui.min.js"></script>
+
+
+<script id="vertexShader" type="x-shader/x-vertex">
+    void main() {
+        gl_Position = vec4( position, 1.0 );
+    }
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+  uniform vec2 u_resolution;
+  uniform vec3 u_mouse;
+  uniform sampler2D u_currentTexture;
+  uniform int u_frameCount;
+  uniform float u_mouseSize;
+
+	//random noise function for initial texture
+	highp float rand(vec2 co)
+	{
+		highp float a = 12.9898;
+		highp float b = 78.233;
+		highp float c = 43758.5453;
+		highp float dt= dot(co.xy ,vec2(a,b));
+		highp float sn= mod(dt,3.14);
+		return fract(sin(sn) * c);
+	}
+
+	float v(float xrel, float yrel) 
+	{
+		vec2 xy;
+		xy.x = mod(gl_FragCoord.x + xrel, u_resolution.x);
+		xy.y = mod(gl_FragCoord.y + yrel, u_resolution.y);
+		
+		return texture2D(u_currentTexture, xy/u_resolution).r;
+	}
+
+	float neighborSum() 
+	{
+		return 	v(-1.,-1.) +
+				v(-1.,0.) +
+				v(-1.,1.) +
+				v(0.,-1.) +
+				v(0.,1.) +
+				v(1.,-1. )+
+				v(1.,0.) +
+				v(1.,1.);
+	}
+
+	void main() 
+	{
+		float minRes = min(u_resolution.x, u_resolution.y);
+		vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / minRes;
+		float inputSize = u_mouseSize / minRes;
+
+		float fate = 1.;
+
+		if(u_frameCount < 2) //create random initial texture first 2 frames of program
+		{
+			float _rand = rand(uv*256.);
+			fate = clamp(floor(_rand * _rand * _rand * 1.2), 0., 1.);
+		}
+		
+		else //calculate neighbor totals
+		{
+			bool alive = (v(0.,0.) == 1.);
+			float sum = neighborSum();
+			bool a = (sum == 3. || (alive && (sum == 2.)));
+			fate = float(a);
+		}
+		
+
+		bool userInput = (u_mouse.z > 0.) &&
+						((uv.x >= u_mouse.x - inputSize && uv.x < u_mouse.x + inputSize) &&
+						(uv.y >= u_mouse.y - inputSize && uv.y < u_mouse.y + inputSize));
+		
+		fate  += float(userInput);
+
+
+		gl_FragColor = vec4(fate);
+	}
+</script>
+<script src="app.js"></script>
+
+</body>
