@@ -14,6 +14,8 @@
   uniform sampler2D u_currentTexture;
   uniform int u_frameCount;
   uniform float u_mouseSize;
+  uniform vec3 u_newLifeColor;
+  uniform vec3 u_survivorColor;
 
 	//random noise function for initial texture
 	highp float rand(vec2 co)
@@ -32,7 +34,7 @@
 		xy.x = mod(gl_FragCoord.x + xrel, u_resolution.x);
 		xy.y = mod(gl_FragCoord.y + yrel, u_resolution.y);
 		
-		return texture2D(u_currentTexture, xy/u_resolution).r;
+		return texture2D(u_currentTexture, xy/u_resolution).a;
 	}
 
 	float neighborSum() 
@@ -54,6 +56,8 @@
 		float inputSize = u_mouseSize / minRes;
 
 		float fate = 1.;
+
+		vec4 before = gl_FragColor;
 
 		if(u_frameCount < 2) //create random initial texture first 2 frames of program
 		{
@@ -78,6 +82,13 @@
 
 
 		gl_FragColor = vec4(fate);
+
+		//change color based on status change
+		if(before != gl_FragColor) {
+			gl_FragColor = vec4(vec3(u_survivorColor)/255.,fate);
+		} else if (before == gl_FragColor && v(0.,0.) == 1.) {
+			gl_FragColor = vec4(vec3(u_newLifeColor)/255.,fate);
+		}
 	}
 </script>
 <script src="app.js"></script>
