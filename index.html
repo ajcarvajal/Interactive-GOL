@@ -16,6 +16,7 @@
   uniform float u_mouseSize;
   uniform vec3 u_newLifeColor;
   uniform vec3 u_survivorColor;
+  uniform int u_paused;
 
 	//random noise function for initial texture
 	highp float rand(vec2 co)
@@ -55,9 +56,9 @@
 		vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / minRes;
 		float inputSize = u_mouseSize / minRes;
 
-		float fate = 1.;
+		float fate = float(v(0.,0.) == 1.);
 
-		vec4 before = gl_FragColor;
+		float before = fate;
 
 		if(u_frameCount < 2) //create random initial texture first 2 frames of program
 		{
@@ -65,11 +66,10 @@
 			fate = clamp(floor(_rand * _rand * _rand * 1.2), 0., 1.);
 		}
 		
-		else //calculate neighbor totals
+		else if (u_paused == 1)//calculate neighbor totals
 		{
-			bool alive = (v(0.,0.) == 1.);
 			float sum = neighborSum();
-			bool a = (sum == 3. || (alive && (sum == 2.)));
+			bool a = (sum == 3. || (fate==1. && (sum == 2.)));
 			fate = float(a);
 		}
 		
@@ -84,9 +84,9 @@
 		gl_FragColor = vec4(fate);
 
 		//change color based on status change
-		if(before != gl_FragColor) {
+		if(fate != before) {
 			gl_FragColor = vec4(vec3(u_survivorColor)/255.,fate);
-		} else if (before == gl_FragColor && v(0.,0.) == 1.) {
+		} else if (before == fate && v(0.,0.) == 1.) {
 			gl_FragColor = vec4(vec3(u_newLifeColor)/255.,fate);
 		}
 	}

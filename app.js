@@ -1,11 +1,7 @@
 let width = window.innerWidth;
 let height = window.innerHeight;
 
-let pixelRatio = 1;//window.devicePixelRatio;
-
-let rtWidth = width * pixelRatio;
-let rtHeight = height * pixelRatio;
-
+let camera = new THREE.OrthographicCamera();
 let mouseposition = {
   x: 0,
   y: 0
@@ -15,21 +11,24 @@ let ControlMenu = function() {
   this.Size = 10;
   this.NewLifeColor = [255,255,255];
   this.SurvivorColor = [255,255,255];
+  this.Pause = function() {
+    uniforms.u_paused.value *= -1;
+  };
   this.Reset = function() {
     onWindowResize();
-  }
+  };
   this.Clear = function() {
     onWindowResize();
     uniforms.u_frameCount.value = 3;
   };
-  
 };
 
 let ControlPanel = new ControlMenu();
 let gui = new dat.GUI();
-gui.width = width / 4;
+gui.width = window.innerWidth / 4;
 gui.add(ControlPanel, 'Reset');
 gui.add(ControlPanel, 'Clear');
+gui.add(ControlPanel, 'Pause');
 gui.add(ControlPanel, 'Size', 1, 200);
 gui.addColor(ControlPanel, 'NewLifeColor');
 gui.addColor(ControlPanel, 'SurvivorColor');
@@ -41,13 +40,9 @@ loop();
 
 function init() {
   renderer = new THREE.WebGLRenderer();
-  //renderer.setPixelRatio(pixelRatio);
   renderer.setSize( width, height );
   document.body.appendChild(renderer.domElement);
-
-  camera = new THREE.Camera();
-  camera.position.z = 0;
-
+  camera.position.z = 1;
   scene = new THREE.Scene();
 
   var geometry = new THREE.PlaneBufferGeometry(2, 2);
@@ -56,8 +51,8 @@ function init() {
   let parameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
     format: THREE.RGBAFormat, stencilBuffer: false };
 
-  rtFront = new THREE.WebGLRenderTarget(rtWidth, rtHeight, parameters);
-  rtBack = new THREE.WebGLRenderTarget(rtWidth, rtHeight, parameters);
+  rtFront = new THREE.WebGLRenderTarget(width, height, parameters);
+  rtBack = new THREE.WebGLRenderTarget(width, height, parameters);
 
 
   //setup shaderMaterials
@@ -69,6 +64,7 @@ function init() {
     u_mouseSize: { type: "f", value: ControlPanel.cursorSize},
     u_newLifeColor: {type: "v3", value: ControlPanel.NewLifeColor},
     u_survivorColor: {type: "v3", value: ControlPanel.SurvivorColor},
+    u_paused: {type: 'i', value: 1},
   };
 
   let material = new THREE.ShaderMaterial( {
@@ -114,9 +110,7 @@ function onWindowResize( event ) {
   uniforms.u_resolution.value.x = width;
   uniforms.u_resolution.value.y = height;
   uniforms.u_mouse.value = new THREE.Vector3();
-  gui.width = width/4;
-
-  
+  gui.width = window.innerWidth/4;
   
   uniforms.u_frameCount.value = 0;
   
